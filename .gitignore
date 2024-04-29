@@ -12,3 +12,14 @@ docs/
 
 # Dotenv file
 .env
+
+# Circom files
+build/
+pots/
+
+# Dependencies
+node_modules/
+
+nova/target/
+
+*.wasm
