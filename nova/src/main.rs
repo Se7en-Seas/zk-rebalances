@@ -1,10 +1,10 @@
-use std::{collections::HashMap, env::current_dir, time::Instant, path::{Path, PathBuf}};
+use std::{collections::HashMap, env::current_dir, time::Instant};
 
 use nova_scotia::{
     circom::reader::load_r1cs, create_public_params,
-    create_recursive_circuit, FileLocation, F, S,
+    create_recursive_circuit, FileLocation, F, 
 };
-use nova_snark::{provider, CompressedSNARK, PublicParams};
+use nova_snark::{provider, PublicParams};
 use serde_json::json;
 
 fn main() {
@@ -16,12 +16,14 @@ fn main() {
     let circuit_file = root.join("toy.r1cs");
     let witness_generator_file = root.join("toy_js/toy.wasm");
     let fl = FileLocation::PathBuf(circuit_file);
-
+    let s0 = Instant::now();
+    println!("Loading R1CS file...");
     let r1cs = load_r1cs::<G1, G2>(&fl); // loads R1CS file into memory
-
-    let pp = create_public_params::<G1, G2>(r1cs.clone());
+    println!("R1CS file loaded in {:?}", s0.elapsed());
 
     // Create private_inputs.
+    let s1 = Instant::now();
+    println!("Creating inputs...");
     let mut private_inputs = Vec::new();
     for i in 0..iteration_count {
         let mut private_input = HashMap::new();
@@ -32,7 +34,10 @@ fn main() {
     let start_public_input = [F::<G1>::from(10), F::<G1>::from(10)];
 
     let pp: PublicParams<G1, G2, _, _> = create_public_params(r1cs.clone());
+    println!("Inputs created in {:?}", s1.elapsed());
 
+    let s2 = Instant::now();
+    println!("Creating a RecursiveSNARK...");
     let recursive_snark = create_recursive_circuit(
         FileLocation::PathBuf(witness_generator_file),
         r1cs,
@@ -40,6 +45,7 @@ fn main() {
         start_public_input.to_vec(),
         &pp,
     ).unwrap();
+    println!("RecursiveSNARK created in {:?}", s2.elapsed());
 
     println!("Verifying a RecursiveSNARK...");
     let start = Instant::now();
@@ -54,6 +60,6 @@ fn main() {
         res,
         start.elapsed()
     );
-    let verifier_time = start.elapsed();
     assert!(res.is_ok());
+
 }
