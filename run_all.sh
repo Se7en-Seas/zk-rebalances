@@ -99,6 +99,10 @@ elif [[ $CIRCUIT_NAME == "powerabn" ]]; then
     echo "{\"a\": \"3\", \"b\": \"11\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "keccakn" ]]; then
     echo "{\"a\": \"1\"}" > ./${CIRCUIT_NAME}_input.json
+elif [[ $CIRCUIT_NAME == "Sha256Toy" ]]; then
+    echo "{\"a\": \"100\", \"adder\": \"1\"}" > ./${CIRCUIT_NAME}_input.json
+elif [[ $CIRCUIT_NAME == "keccakToy" ]]; then
+    echo "{\"a\": \"100\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "mimcn" ]]; then
     echo "{\"a\": \"1\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "multimimcn" ]]; then
@@ -120,7 +124,7 @@ elif [[ $CIRCUIT_NAME == "vedaMerkleTree" ]]; then
 elif [[ $CIRCUIT_NAME == "vedaMerkleProof" ]]; then
     echo "{\"leafInTwo\": [\"1\", \"2\"], \"secretLeafHash\": \"13280099886815029221288666002737874468148381556221134405564391793586496323681\", \"rootWithSecret\": \"12247190692179946320417539434998885926062420871238534164534302033690612888116\", \"pathElements\": [\"100\", \"7179436869341541572761140212288781131921875879700904991609792924799895462951\"], \"pathIndices\": [\"0\", \"0\"]}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "toy" ]]; then
-    echo "{\"step_in\": [\"10\", \"10\"], \"adder\": \"0\"}" > ./${CIRCUIT_NAME}_input.json
+    echo "{\"step_in\": [\"10\"], \"adder\": \"0\"}" > ./${CIRCUIT_NAME}_input.json
 else
     echo "[ERROR] No inputs: create branch for CIRCUIT_NAME '$CIRCUIT_NAME' with input data in run_all.sh script"
     exit 1

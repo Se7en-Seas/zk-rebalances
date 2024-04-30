@@ -23,18 +23,20 @@ fn main() {
 
     // Create private_inputs.
     let s1 = Instant::now();
-    println!("Creating inputs...");
+    println!("Creating private inputs...");
     let mut private_inputs = Vec::new();
     for i in 0..iteration_count {
         let mut private_input = HashMap::new();
         private_input.insert("adder".to_string(), json!(i));
         private_inputs.push(private_input);
     }
+    println!("Private Inputs created in {:?}", s1.elapsed());
 
-    let start_public_input = [F::<G1>::from(10), F::<G1>::from(10)];
-
+    let s3 = Instant::now();
+    println!("Creating public params...");
+    let start_public_input = [F::<G1>::from(10)];
     let pp: PublicParams<G1, G2, _, _> = create_public_params(r1cs.clone());
-    println!("Inputs created in {:?}", s1.elapsed());
+    println!("Public params created in {:?}", s3.elapsed());
 
     let s2 = Instant::now();
     println!("Creating a RecursiveSNARK...");

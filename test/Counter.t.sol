@@ -12,13 +12,17 @@ contract CounterTest is Test {
         counter.setNumber(0);
     }
 
-    function test_Increment() public {
-        counter.increment();
-        assertEq(counter.number(), 1);
-    }
+    function testSha256Hash() public {
+        uint256 nonce = 10;
 
-    function testFuzz_SetNumber(uint256 x) public {
-        counter.setNumber(x);
-        assertEq(counter.number(), x);
+        uint256 p = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+        uint256 digest = uint256(sha256(abi.encodePacked(nonce, uint256(0)))) % p;
+        for (uint256 i=1; i<5; i++) {
+            digest = uint256(sha256(abi.encodePacked(digest, uint256(i)))) % p;
+        }
+
+        console.log("digest: %d", digest);
+        console.logBytes32(bytes32(digest));
     }
 }
