@@ -4,7 +4,7 @@ use nova_scotia::{
     circom::reader::load_r1cs, create_public_params,
     create_recursive_circuit, FileLocation, F, 
 };
-use nova_snark::{provider, PublicParams};
+use nova_snark::{provider, PublicParams, CompressedSNARK};
 use serde_json::json;
 
 fn main() {
@@ -13,8 +13,8 @@ fn main() {
     type G1 = provider::bn256_grumpkin::bn256::Point;
     type G2 = provider::bn256_grumpkin::grumpkin::Point;
 
-    let circuit_file = root.join("toy.r1cs");
-    let witness_generator_file = root.join("toy_js/toy.wasm");
+    let circuit_file = root.join("build/toy.r1cs");
+    let witness_generator_file = root.join("build/toy_js/toy.wasm");
     let fl = FileLocation::PathBuf(circuit_file);
     let s0 = Instant::now();
     println!("Loading R1CS file...");
@@ -61,5 +61,7 @@ fn main() {
         start.elapsed()
     );
     assert!(res.is_ok());
+
+    // let compressedSNARK = CompressedSNARK::<<G1, G2, C1<G1>, C2<G2>>::setup(&pp).unwrap();
 
 }
