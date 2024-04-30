@@ -2,19 +2,47 @@ use std::{collections::HashMap, env::current_dir, time::Instant};
 
 use nova_scotia::{
     circom::reader::load_r1cs, create_public_params,
-    create_recursive_circuit, FileLocation, F, 
+    create_recursive_circuit, FileLocation, F,
 };
 use nova_snark::{provider, PublicParams, CompressedSNARK};
 use serde_json::json;
 
+// fn spartan(
+//     pp: &PublicParams<G1, G2, C1, C2>,
+//     recursive_snark: RecursiveSNARK<G1, G2, C1, C2>,
+//     num_steps: usize,
+//     inputs: &RecursionInputs
+// ) -> CompressedSNARK<G1, G2, C1, C2, S1, S2> {
+//     println!("- Generating");
+//     let start = Instant::now();
+//     let (pk, vk) = CompressedSNARK::<_, _, _, _, S1, S2>::setup(&pp).unwrap();
+//     let res = CompressedSNARK::<_, _, _, _, S1, S2>::prove(&pp, &pk, &recursive_snark);
+
+//     assert!(res.is_ok());
+//     println!("- Done ({:?})", start.elapsed());
+//     let compressed_snark = res.unwrap();
+
+//     println!("- Verifying");
+//     let start = Instant::now();
+//     let res = compressed_snark.verify(
+//         &vk,
+//         num_steps,
+//         inputs.start_pub_primary.clone(),
+//         inputs.start_pub_secondary.clone(),
+//     );
+//     assert!(res.is_ok());
+//     println!("- Done ({:?})", start.elapsed());
+
+//     compressed_snark
+// }
 fn main() {
-    let iteration_count = 5;
+    let iteration_count = 2;
     let root = current_dir().unwrap();
     type G1 = provider::bn256_grumpkin::bn256::Point;
     type G2 = provider::bn256_grumpkin::grumpkin::Point;
 
-    let circuit_file = root.join("build/toy.r1cs");
-    let witness_generator_file = root.join("build/toy_js/toy.wasm");
+    let circuit_file = root.join("build/recursiveVedaMerkleProof.r1cs");
+    let witness_generator_file = root.join("build/recursiveVedaMerkleProof_js/recursiveVedaMerkleProof.wasm");
     let fl = FileLocation::PathBuf(circuit_file);
     let s0 = Instant::now();
     println!("Loading R1CS file...");
@@ -25,16 +53,32 @@ fn main() {
     let s1 = Instant::now();
     println!("Creating private inputs...");
     let mut private_inputs = Vec::new();
-    for i in 0..iteration_count {
-        let mut private_input = HashMap::new();
-        private_input.insert("adder".to_string(), json!(i));
-        private_inputs.push(private_input);
-    }
+    let mut private_input_0 = HashMap::new();
+    private_input_0.insert("leaf".to_string(), json!("19321998414906712342737093331922571923461328494325615870852140381009276079041"));
+    private_input_0.insert("pathElements".to_string(), json!(["556394723030469102187691977268492641419685995573696209705695064770672291535"]));
+    private_input_0.insert("pathIndices".to_string(), json!([0]));
+    private_input_0.insert("expectedStepDigest".to_string(), json!("5278850737375532418257002990256989970442868547265647747102965515540374714661"));
+    private_inputs.push(private_input_0);
+
+    let mut private_input_1 = HashMap::new();
+    private_input_1.insert("leaf".to_string(), json!("556394723030469102187691977268492641419685995573696209705695064770672291535"));
+    private_input_1.insert("pathElements".to_string(), json!(["19321998414906712342737093331922571923461328494325615870852140381009276079041"]));
+    private_input_1.insert("pathIndices".to_string(), json!([1]));
+    private_input_1.insert("expectedStepDigest".to_string(), json!("6026633109103954617425446211766921388684641560832459945905859224654515400382"));
+    private_inputs.push(private_input_1);
+
+
+    // for i in 0..iteration_count {
+    //     let mut private_input = HashMap::new();
+    //     private_input.insert("leaf".to_string(), json!(i));
+    //     private_inputs.push(private_input);
+    // }
     println!("Private Inputs created in {:?}", s1.elapsed());
 
     let s3 = Instant::now();
     println!("Creating public params...");
-    let start_public_input = [F::<G1>::from(10)];
+    let start_public_input = [F::<G1>::from(1), F::<G1>::from(0), F::<G1>::from_raw([16562997167074987800,11743143821083967037, 9598410008986871971, 1418635740345084031])];
+    // let start_public_input = [F::<G1>::from(10)];
     let pp: PublicParams<G1, G2, _, _> = create_public_params(r1cs.clone());
     println!("Public params created in {:?}", s3.elapsed());
 

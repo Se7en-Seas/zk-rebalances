@@ -64,6 +64,7 @@ template HashSingle() {
                                      / \   / \   / \  / \
                                     ?  A  B  C  D  E F  G
 ***************************************************************************************************/
+// TODO leafsInTwo can be removed sinc we can treat them as a single field if we use sha256 % p.
 // TREE_CAPACITY must be a power of 2.
 template VedaMerkleTree(TREE_CAPACITY) {
     var layerIterations = 0;
