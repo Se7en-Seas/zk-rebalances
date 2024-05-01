@@ -2,39 +2,12 @@ use std::{collections::HashMap, env::current_dir, time::Instant};
 
 use nova_scotia::{
     circom::reader::load_r1cs, create_public_params,
-    create_recursive_circuit, FileLocation, F,
+    create_recursive_circuit, FileLocation, F, S
 };
 use nova_snark::{provider, PublicParams, CompressedSNARK};
 use serde_json::json;
 
-// fn spartan(
-//     pp: &PublicParams<G1, G2, C1, C2>,
-//     recursive_snark: RecursiveSNARK<G1, G2, C1, C2>,
-//     num_steps: usize,
-//     inputs: &RecursionInputs
-// ) -> CompressedSNARK<G1, G2, C1, C2, S1, S2> {
-//     println!("- Generating");
-//     let start = Instant::now();
-//     let (pk, vk) = CompressedSNARK::<_, _, _, _, S1, S2>::setup(&pp).unwrap();
-//     let res = CompressedSNARK::<_, _, _, _, S1, S2>::prove(&pp, &pk, &recursive_snark);
-
-//     assert!(res.is_ok());
-//     println!("- Done ({:?})", start.elapsed());
-//     let compressed_snark = res.unwrap();
-
-//     println!("- Verifying");
-//     let start = Instant::now();
-//     let res = compressed_snark.verify(
-//         &vk,
-//         num_steps,
-//         inputs.start_pub_primary.clone(),
-//         inputs.start_pub_secondary.clone(),
-//     );
-//     assert!(res.is_ok());
-//     println!("- Done ({:?})", start.elapsed());
-
-//     compressed_snark
-// }
+// TODO functionize this like the zator code.
 fn main() {
     let iteration_count = 2;
     let root = current_dir().unwrap();
@@ -108,6 +81,41 @@ fn main() {
     );
     assert!(res.is_ok());
 
-    // let compressedSNARK = CompressedSNARK::<<G1, G2, C1<G1>, C2<G2>>::setup(&pp).unwrap();
+    println!("Compressing a RecursiveSNARK...");
+    let s4 = Instant::now();
+    let (pk, vk) = CompressedSNARK::<_,_,_,_, S<G1>, S<G2>>::setup(&pp).unwrap();
+    let res = CompressedSNARK::<_,_,_,_, S<G1>, S<G2>>::prove(&pp, &pk, &recursive_snark);
+
+    println!(
+        "CompressedSNARK::prove: {:?}, took {:?}",
+        res.is_ok(),
+        s4.elapsed()
+    );
+    assert!(res.is_ok());
+
+    // Below is what would go to operators.
+    let compressed_snark = res.unwrap();
+
+    let z0_secondary = [F::<G2>::from(0)];
+
+    // verify the compressed SNARK
+    println!("Verifying a CompressedSNARK...");
+    let s5 = Instant::now();
+    let res = compressed_snark.verify(
+        &vk,
+        iteration_count,
+        start_public_input.to_vec(),
+        z0_secondary.to_vec(),
+    );
+    println!(
+        "CompressedSNARK::verify: {:?}, took {:?}",
+        res.is_ok(),
+        s5.elapsed()
+    );
+    assert!(res.is_ok());
+    println!(
+        "CompressedSNARK::verify output: {:?}",
+        res
+    );
 
 }

@@ -45,6 +45,9 @@ contract CounterTest is Test {
         path_indices_0 = 0;
         expected_digest = uint256(sha256(abi.encodePacked(step_in_0, leaf))) % p;
 
+        console.log("Root");
+        console.logBytes32(bytes32(root));
+
         // Convert step_in_2 to an array of u64 elements.
         uint64[4] memory _step_in_2 = [uint64(step_in_2), uint64(step_in_2 >> 64), uint64(step_in_2 >> 128), uint64(step_in_2 >> 192)];
 
@@ -98,5 +101,15 @@ contract CounterTest is Test {
 
         console.log("digest: %d", digest);
         console.logBytes32(bytes32(digest));
+    }
+
+    function testKeccakHash() public {
+        uint256 nonce = 10;
+
+        uint256 p = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+        uint256 digest = uint256(keccak256(abi.encodePacked(nonce))) % p;
+
+        console.log("digest: %d", digest);
     }
 }
