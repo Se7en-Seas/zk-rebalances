@@ -102,7 +102,7 @@ elif [[ $CIRCUIT_NAME == "keccakn" ]]; then
 elif [[ $CIRCUIT_NAME == "Sha256Toy" ]]; then
     echo "{\"a\": \"100\", \"adder\": \"1\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "keccakToy" ]]; then
-    echo "{\"a\": \"10\"}" > ./${CIRCUIT_NAME}_input.json
+    echo "{\"a\": \"8937529837589437598423759843752475343746238576\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "mimcn" ]]; then
     echo "{\"a\": \"1\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "multimimcn" ]]; then
