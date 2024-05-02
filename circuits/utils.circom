@@ -45,7 +45,7 @@ template Keccakn(N) {
 }
 
 // Token prices are packed as follows.
-// (160 bits Token Address) (88 bits Token Price)
+// LSB (160 bits Token Address) (88 bits Token Price) MSB
 template UnpackTokenPrice() {
     signal input in;
     signal output token;
@@ -68,6 +68,8 @@ template UnpackTokenPrice() {
     price <== bits2Price.out;
 }
 
+// Token deltas are packed as follows.
+// LSB (160 bits Token Address) (88 bits Token Delta) (1 bit for sign) MSB
 template UnpackTokenDelta() {
     signal input in;
     signal output token;
