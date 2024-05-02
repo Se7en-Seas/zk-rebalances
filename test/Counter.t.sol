@@ -108,7 +108,7 @@ contract CounterTest is Test {
 
         uint256 p = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
-        uint256 digest = uint256(keccak256(abi.encodePacked(nonce, nonce, nonce))) % p;
+        uint256 digest = uint256(keccak256(abi.encodePacked(uint256(10), uint256(20), uint256(30), uint256(404304034434)))) % p;
 
         console.log("digest: %d", digest);
     }

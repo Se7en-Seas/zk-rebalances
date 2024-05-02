@@ -723,6 +723,7 @@ version = "0.1.0"
 dependencies = [
  "nova-scotia",
  "nova-snark",
+ "pasta_curves",
  "primitive-types",
  "serde_json",
 ]

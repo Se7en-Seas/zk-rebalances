@@ -13,6 +13,8 @@ fn main() {
     let root = current_dir().unwrap();
     type G1 = provider::bn256_grumpkin::bn256::Point;
     type G2 = provider::bn256_grumpkin::grumpkin::Point;
+    // type G1 = pasta_curves::pallas::Point;
+    // type G2 = pasta_curves::vesta::Point;
 
     let circuit_file = root.join("build/recursiveVedaMerkleProof.r1cs");
     let witness_generator_file = root.join("build/recursiveVedaMerkleProof_js/recursiveVedaMerkleProof.wasm");

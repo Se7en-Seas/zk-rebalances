@@ -5,7 +5,7 @@ include "../node_modules/circomlib/circuits/bitify.circom";
 
 // TODO when hashing the Token Delta values it is important to hash them as uint256 since solidity does not support hashing them as 254 bit numbers.
 // So maybe I actually dont even need to do anything, just pass the fields to this function, then the Num2Bits logic adds 2 zeroes to the front!
-template keccakn(N) {
+template Keccakn(N) {
     signal input in[N];
     signal output out;
 
@@ -28,11 +28,10 @@ template keccakn(N) {
     }
 
     // Assign all inputs to keccak.
-    // Note we need to traverse through `reverse` in reverse order so we derement n.
-    for (var n=N; n!=0; n--) {
+    for (var n=0; n<N; n++) {
         for (var i=0; i< 256 / 8; i++) {
             for (var j=0; j<8; j++) {
-                keccak.in[8*i + j + (256 * (N-n))] <== reverse[n-1][8*i + (7-j)];
+                keccak.in[8*i + j + (256 * n)] <== reverse[n][8*i + (7-j)];
             }
         }
     }
@@ -43,4 +42,28 @@ template keccakn(N) {
         }
     }
     out <== bits2Out.out;
+}
+
+// Token prices are packed as follows.
+// (160 bits Token Address) (88 bits Token Price)
+template UnpackTokenPrice() {
+    signal input in;
+    signal output token;
+    signal output price;
+
+    component in2Bits = Num2Bits(248);
+    component bits2Token = Bits2Num(160);
+    component bits2Price = Bits2Num(88);
+
+    in2Bits.in <== in;
+    for (var i=0; i<160; i++) {
+        bits2Token.in[i] <== in2Bits.out[i];
+    }
+
+    for (var i=0; i<88; i++) {
+        bits2Price.in[i] <== in2Bits.out[160 + i];
+    }
+
+    token <== bits2Token.out;
+    price <== bits2Price.out;
 }
