@@ -112,4 +112,29 @@ contract CounterTest is Test {
 
         console.log("digest: %d", digest);
     }
+
+    function testPackTokenPrice() public {
+        uint160 token = uint160(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+        uint88 price = uint88(3_000e8);
+
+        uint256 packed = (uint256(price) << 160) | uint256(token);
+
+        console.log("packed: %d", packed);
+        console.log("token: %d", uint160(packed));
+        console.log("token: %d", token);
+        console.log("price: %d", price);
+    }
+
+        function testPackTokenDelta() public {
+        uint8 sign = 1;
+        uint88 delta = uint88(201e8);
+        uint160 token = uint160(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
+        uint256 packed = (uint256(sign) << 248) | (uint256(delta) << 160) | uint256(token);
+
+        console.log("packed: %d", packed);
+        console.log("token: %d", token);
+        console.log("delta: %d", delta);
+        console.log("sign: %d", sign);
+    }
 }

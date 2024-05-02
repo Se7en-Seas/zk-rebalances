@@ -67,3 +67,28 @@ template UnpackTokenPrice() {
     token <== bits2Token.out;
     price <== bits2Price.out;
 }
+
+template UnpackTokenDelta() {
+    signal input in;
+    signal output token;
+    signal output delta;
+    signal output sign;
+
+    component in2Bits = Num2Bits(249);
+    component bits2Token = Bits2Num(160);
+    component bits2Delta = Bits2Num(88);
+
+    in2Bits.in <== in;
+    for (var i=0; i<160; i++) {
+        bits2Token.in[i] <== in2Bits.out[i];
+    }
+
+    for (var i=0; i<88; i++) {
+        bits2Delta.in[i] <== in2Bits.out[160 + i];
+    }
+
+
+    token <== bits2Token.out;
+    delta <== bits2Delta.out;
+    sign <== in2Bits.out[248]; // No need to constrain sign to 0 or 1 since we are reading a bit.
+}

@@ -104,7 +104,7 @@ elif [[ $CIRCUIT_NAME == "Sha256Toy" ]]; then
 elif [[ $CIRCUIT_NAME == "keccakToy" ]]; then
     echo "{\"a\": \"10\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "RebalanceStep" ]]; then
-    echo "{\"in\": [\"10\", \"20\", \"30\", \"404304034434\"]}" > ./${CIRCUIT_NAME}_input.json
+    echo "{\"in\": \"452312848583266417749507071638413483963909280303663813900315970097544260802\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "mimcn" ]]; then
     echo "{\"a\": \"1\"}" > ./${CIRCUIT_NAME}_input.json
 elif [[ $CIRCUIT_NAME == "multimimcn" ]]; then
