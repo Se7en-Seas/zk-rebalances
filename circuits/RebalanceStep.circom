@@ -16,16 +16,17 @@ include "utils.circom";
 // component main { public [step_in] } = Example();
 
 template RebalanceStep () {
-    signal input in;
-    signal output token;
-    signal output delta;
-    signal output sign;
-    component unpacker = UnpackTokenDelta();
+    signal input tokenDelta;
+    signal input tokenPrice[1];
+    signal output positiveValueChange;
+    signal output negativeValueChange;
+    component val = DetermineValueChange(1);
 
-    unpacker.in <== in;
-    token <== unpacker.token;
-    delta <== unpacker.delta;
-    sign <== unpacker.sign;
+    val.deltaIn <== tokenDelta;
+    val.pricesIn[0] <== tokenPrice[0];
+    positiveValueChange <== val.positiveValueChange;
+    negativeValueChange <== val.negativeValueChange;
+
 }
 
 component main = RebalanceStep();
