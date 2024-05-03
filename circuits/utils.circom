@@ -3,6 +3,8 @@ pragma circom 2.0.0;
 include "vocdoni-keccak/keccak.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
+include "../node_modules/circomlib/circuits/switcher.circom";
 
 // TODO when hashing the Token Delta values it is important to hash them as uint256 since solidity does not support hashing them as 254 bit numbers.
 // So maybe I actually dont even need to do anything, just pass the fields to this function, then the Num2Bits logic adds 2 zeroes to the front!
@@ -100,11 +102,11 @@ template UnpackTokenDelta() {
 // Then the final value output will be the 
 // previousValue + positiveTotal - negativeTotal + offset
 // Where offset is the half way point of the prime number, 
-template DetermineValueChange(N) {
+template CalculateDeltaWithNPrices(N) {
     signal input deltaIn; // The Token Delta.
     signal input pricesIn[N]; // Array of Token Prices.
-    signal output positiveValueChange;
-    signal output negativeValueChange;
+    signal output positiveDelta;
+    signal output negativeDelta;
 
     component unpackDelta = UnpackTokenDelta();
     component unpackPrices[N];
@@ -145,7 +147,6 @@ template DetermineValueChange(N) {
         multiplier[i][0] <== signEqs[i][0].out * tokenEqs[i].out;
         multiplier[i][1] <== signEqs[i][1].out * tokenEqs[i].out;
 
-        // TODO maybe I can just have this calculate total inputs be assigned here and remove the positiveSums and negativeSums signals?
         positiveSums[i] <== multiplier[i][0] * amountAdjusted[i];
         negativeSums[i] <== multiplier[i][1] * amountAdjusted[i];
 
@@ -153,9 +154,36 @@ template DetermineValueChange(N) {
         negativeTotal.in[i] <== negativeSums[i];
     }
 
+    positiveDelta <== positiveTotal.out;
+    negativeDelta <== negativeTotal.out;
+}
 
-    positiveValueChange <== positiveTotal.out;
-    negativeValueChange <== negativeTotal.out;
+template CalculateRebalanceValueDelta(TOKEN_DELTA_COUNT, TOKEN_PRICE_COUNT) {
+    signal input previousDelta;
+    signal input tokenDeltas[TOKEN_DELTA_COUNT];
+    signal input tokenPrices[TOKEN_PRICE_COUNT];
+    signal output rebalanceValueDelta;
+
+    component calculateDelta[TOKEN_DELTA_COUNT];
+
+    for (var i=0; i<TOKEN_DELTA_COUNT; i++) {
+        calculateDelta[i] = CalculateDeltaWithNPrices(TOKEN_PRICE_COUNT);
+        calculateDelta[i].deltaIn <== tokenDeltas[i];
+        for (var j=0; j<TOKEN_PRICE_COUNT; j++) {
+            calculateDelta[i].pricesIn[j] <== tokenPrices[j];
+        }
+    }
+
+    signal deltaSum[TOKEN_DELTA_COUNT + 1];
+
+    deltaSum[0] <== previousDelta;
+
+    for (var i=1; i<TOKEN_DELTA_COUNT + 1; i++) {
+        deltaSum[i] <== deltaSum[i-1] + calculateDelta[i-1].positiveDelta - calculateDelta[i-1].negativeDelta;
+    }
+
+    // Assign the output to the last deltaSum element.
+    rebalanceValueDelta <== deltaSum[TOKEN_DELTA_COUNT];
 }
 
 template CalculateTotal(n) {
@@ -171,4 +199,26 @@ template CalculateTotal(n) {
     }
 
     out <== sums[n-1];
+}
+
+template HashLR() {
+    signal input L;
+    signal input R;
+    signal output out;
+
+    component hasher = Poseidon(2);
+    hasher.inputs[0] <== L;
+    hasher.inputs[1] <== R;
+
+    hasher.out ==> out;
+}
+
+template HashSingle() {
+    signal input single;
+    signal output out;
+
+    component hasher = Poseidon(1);
+    hasher.inputs[0] <== single;
+
+    hasher.out ==> out;
 }
