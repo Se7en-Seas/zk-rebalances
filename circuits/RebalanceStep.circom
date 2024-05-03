@@ -16,6 +16,8 @@ include "utils.circom";
 // component main { public [step_in] } = Example();
 // TODO I need overflow protection in this logic, so if we dont just roll over when we hit the max value, or zero.
 // Eventhough this is fairly unlikely to happen with a rebalance that is actually possible.
+// My idea is to have a simple template that adds the 2 numbers together, then enforces that the result is greater than the first number.
+// then for subtracintg, we subtract the 2 numbers, then enforce that the result is less than the first number.
 template RebalanceStep (LEVELS, TOKEN_DELTA_COUNT, TOKEN_PRICE_COUNT) {
     // Public signals.
     // step_in[0] = nonce or previous rebalance digest
@@ -108,10 +110,4 @@ template RebalanceStep (LEVELS, TOKEN_DELTA_COUNT, TOKEN_PRICE_COUNT) {
     step_out[0] <== rebalanceDigestHasher.out;
 }
 
-component main = RebalanceStep(10, 4, 9);
-
-/* INPUT = {
-    "step_in": [1, 1],
-    "step_out": [1, 2],
-    "adder": 0
-} */
+component main {public [step_in]} = RebalanceStep(10, 4, 9);

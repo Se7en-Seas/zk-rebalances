@@ -28,33 +28,6 @@ template HashSingle() {
     hasher.out ==> out;
 }
 
-// Hash using MiMC7.
-// template HashLR() {
-//     signal input L;
-//     signal input R;
-//     signal output out;
-
-//     // Define a MiMC7 hash circuit with 2 inputs and 91 rounds
-//     component hasher = MultiMiMC7(2, 91);
-//     hasher.in[0] <== L;
-//     hasher.in[1] <== R;
-//     // Give hasher a fixed key of 1.
-//     hasher.k <== 1;
-//     out <== hasher.out;
-// }
-
-// template HashSingle() {
-//     signal input single;
-//     signal output out;
-
-//     // Define a MiMC7 hash circuit with 2 inputs and 91 rounds
-//     component hasher = MiMC7(91);
-//     hasher.x_in <== single;
-//     // Give hasher a fixed key of 1.
-//     hasher.k <== 1;
-//     out <== hasher.out;
-// }
-
 /***************************************************************************************************
                                             ?ABCDEFG
                                             /      \
@@ -64,7 +37,6 @@ template HashSingle() {
                                      / \   / \   / \  / \
                                     ?  A  B  C  D  E F  G
 ***************************************************************************************************/
-// TODO leafsInTwo can be removed since we can treat them as a single field if we use keccak % p.
 // TREE_CAPACITY must be a power of 2.
 template VedaMerkleTree(TREE_CAPACITY) {
     var layerIterations = 0;
@@ -83,17 +55,15 @@ template VedaMerkleTree(TREE_CAPACITY) {
 
     // Private signals.
     // Minus 1 since one leaf is reserved for the secret leaf.
-    signal input leafsInTwo[TREE_CAPACITY - 1][2]; // leafs broken into 2 signals so that keccak256 hashes can be used.
+    signal input leafs[TREE_CAPACITY - 1]; // Minus 1 since one leaf is reserved for the secret leaf.
     signal input secretLeaf; // Secret leaf to be added to the tree
     signal input pathIndices[arrayLength];
 
     // Internal signals.
-    // Minus 1 since one leaf is reserved for the secret leaf.
-    signal leafs[TREE_CAPACITY - 1];
     signal nullLeaf <== 0;
 
     // Components.
-    component hashersWithNull[arrayLength + TREE_CAPACITY - 1];
+    component hashersWithNull[arrayLength];
     component hashersWithSecret[layerIterations];
     component switchersWithNull[arrayLength];
     component switchersWithSecret[layerIterations];
@@ -106,71 +76,93 @@ template VedaMerkleTree(TREE_CAPACITY) {
     // The tree with null and tree with secret will share the majority of the same hashes, with the exception being the
     // first hash of every layer
 
-    // Ingest leafsInTwo into leafs using Poseidon(leafsInTwo[0], leafsInTwo[1]) -> leafs.
-    for (var i=0; i<TREE_CAPACITY - 1; i++) {
+    // Hash the first layer of leafs.
+    // Hash null leaf with leaf zero.
+    switchersWithNull[0] = Switcher();
+    switchersWithNull[0].L <== nullLeaf;
+    switchersWithNull[0].R <== leafs[0];
+    switchersWithNull[0].sel <== pathIndices[0];
+
+    hashersWithNull[0] = HashLR();
+    hashersWithNull[0].L <== switchersWithNull[0].outL;
+    hashersWithNull[0].R <== switchersWithNull[0].outR;
+
+    // Hash secret leaf with leaf zero.
+    switchersWithSecret[0] = Switcher();
+    switchersWithSecret[0].L <== secretLeaf;
+    switchersWithSecret[0].R <== leafs[0];
+    switchersWithSecret[0].sel <== pathIndices[0];
+
+    hashersWithSecret[0] = HashLR();
+    hashersWithSecret[0].L <== switchersWithSecret[0].outL;
+    hashersWithSecret[0].R <== switchersWithSecret[0].outR;
+
+    // Hash the rest of the first layer.
+    for (var i=1; i<TREE_CAPACITY / 2; i++) {
+        switchersWithNull[i] = Switcher();
+        switchersWithNull[i].L <== leafs[i * 2 - 1];
+        switchersWithNull[i].R <== leafs[i * 2];
+        switchersWithNull[i].sel <== pathIndices[i];
+
         hashersWithNull[i] = HashLR();
-        hashersWithNull[i].L <== leafsInTwo[i][0];
-        hashersWithNull[i].R <== leafsInTwo[i][1];
-        leafs[i] <== hashersWithNull[i].out;
+        hashersWithNull[i].L <== switchersWithNull[i].outL;
+        hashersWithNull[i].R <== switchersWithNull[i].outR;
     }
 
     // Hash the first layer of leafs.
     // As for a tree of 8 leafs, with one secret leaf, the majority of hashes between the secret and no secret tree are the same.
     var hashersIndex = 0;
-    var hasherOffset = TREE_CAPACITY - 1;
-    var switcherOffset = 0;
-    for (var i=0; i<layerIterations; i++) {
+    var offset = TREE_CAPACITY / 2;
+    for (var i=1; i<layerIterations; i++) {
         // Start with Null tree.
         // Set up switcher.
-        switchersWithNull[switcherOffset] = Switcher();
-        switchersWithNull[switcherOffset].L <== i == 0 ? nullLeaf : hashersWithNull[hashersIndex].out;
-        switchersWithNull[switcherOffset].R <== i == 0 ? hashersWithNull[hashersIndex].out : hashersWithNull[hashersIndex + 1].out;
-        switchersWithNull[switcherOffset].sel <== pathIndices[switcherOffset];
+        switchersWithNull[offset] = Switcher();
+        switchersWithNull[offset].L <== hashersWithNull[hashersIndex].out;
+        switchersWithNull[offset].R <== hashersWithNull[hashersIndex + 1].out;
+        switchersWithNull[offset].sel <== pathIndices[offset];
         
         // Setup hasher.
-        hashersWithNull[hasherOffset] = HashLR();
-        hashersWithNull[hasherOffset].L <== switchersWithNull[switcherOffset].outL;
-        hashersWithNull[hasherOffset].R <== switchersWithNull[switcherOffset].outR;
+        hashersWithNull[offset] = HashLR();
+        hashersWithNull[offset].L <== switchersWithNull[offset].outL;
+        hashersWithNull[offset].R <== switchersWithNull[offset].outR;
 
         // Now do the Secret tree.
         // Set up switcher.
-        // Since we know these components are used for the first hash of each layer, we do not need to use offset logic, instead we can just use i.
+        // Since we know these components are used for the first hash of each layer, we do not need to use the offset logic, instead we can just use i.
         // Note we use the same path indices so that both trees use the same indices for the firt element of each layer.
         switchersWithSecret[i] = Switcher();
-        switchersWithSecret[i].L <== i == 0 ? secretLeaf : hashersWithSecret[i-1].out;
-        switchersWithSecret[i].R <== i == 0 ? hashersWithNull[hashersIndex].out : hashersWithNull[hashersIndex + 1].out;
-        switchersWithSecret[i].sel <== pathIndices[switcherOffset];
+        switchersWithSecret[i].L <== hashersWithSecret[i-1].out;
+        switchersWithSecret[i].R <== hashersWithNull[hashersIndex + 1].out;
+        switchersWithSecret[i].sel <== pathIndices[offset];
 
         // Setup hasher.
         hashersWithSecret[i] = HashLR();
         hashersWithSecret[i].L <== switchersWithSecret[i].outL;
         hashersWithSecret[i].R <== switchersWithSecret[i].outR;
 
-        // Only increment by 1 if on the initial layer since we only used the output from 1 hasher.
-        hashersIndex += i == 0 ? 1 : 2;
+        hashersIndex += 2;
 
         // Now iterate through the rest of the layer.
         var iterations = TREE_CAPACITY / (2 ** (i + 1));
         for (var j=1; j<iterations; j++) {
             // Setup switcher.
-            switchersWithNull[j + switcherOffset] = Switcher();
-            switchersWithNull[j + switcherOffset].L <== hashersWithNull[hashersIndex].out;
-            switchersWithNull[j + switcherOffset].R <== hashersWithNull[hashersIndex + 1].out;
-            switchersWithNull[j + switcherOffset].sel <== pathIndices[j + switcherOffset];
+            switchersWithNull[j + offset] = Switcher();
+            switchersWithNull[j + offset].L <== hashersWithNull[hashersIndex].out;
+            switchersWithNull[j + offset].R <== hashersWithNull[hashersIndex + 1].out;
+            switchersWithNull[j + offset].sel <== pathIndices[j + offset];
 
             // Setup hasher.
-            hashersWithNull[j + hasherOffset] = HashLR();
-            hashersWithNull[j + hasherOffset].L <== switchersWithNull[j + switcherOffset].outL;
-            hashersWithNull[j + hasherOffset].R <== switchersWithNull[j + switcherOffset].outR;
+            hashersWithNull[j + offset] = HashLR();
+            hashersWithNull[j + offset].L <== switchersWithNull[j + offset].outL;
+            hashersWithNull[j + offset].R <== switchersWithNull[j + offset].outR;
 
             hashersIndex += 2;
         }
-        hasherOffset += iterations;
-        switcherOffset += iterations;
+        offset += iterations;
     }
 
     // Constrain final root hashes.
-    rootWithNull <== hashersWithNull[hasherOffset - 1].out;
+    rootWithNull <== hashersWithNull[offset - 1].out;
     rootWithSecret <== hashersWithSecret[layerIterations - 1].out;
 }
 
