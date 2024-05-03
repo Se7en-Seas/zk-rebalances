@@ -127,11 +127,14 @@ template CalculateDeltaWithNPrices(N) {
     signal multiplier[N][2];
     component positiveTotal = CalculateTotal(N);
     component negativeTotal = CalculateTotal(N);
+    component matchingTokenCount = CalculateTotal(N);
 
     for (var i=0; i<N; i++) {
         tokenEqs[i] = IsEqual();
         tokenEqs[i].in[0] <== unpackDelta.token;
         tokenEqs[i].in[1] <== unpackPrices[i].token;
+
+        matchingTokenCount.in[i] <== tokenEqs[i].out;
 
         amount[i] <== unpackDelta.delta * unpackPrices[i].price; // TODO need a way to check for overflow, or should check to see what would cause overflow.
         amountAdjusted[i] <== amount[i] / 100000000; // Divide out 1e8 to get the actual amount.
@@ -153,6 +156,9 @@ template CalculateDeltaWithNPrices(N) {
         positiveTotal.in[i] <== positiveSums[i];
         negativeTotal.in[i] <== negativeSums[i];
     }
+
+    // Make sure that we either found a single price if the token is non zero, or that we found no prices if the token is zero.
+    assert((unpackDelta.token > 0 && matchingTokenCount.out == 1) || (unpackDelta.token == 0 && matchingTokenCount.out == 0));
 
     positiveDelta <== positiveTotal.out;
     negativeDelta <== negativeTotal.out;
